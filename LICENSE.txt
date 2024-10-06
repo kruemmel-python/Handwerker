@@ -1,21 +1,23 @@
-MIT License
+# Lizenz
 
-Copyright (c) [year] [fullname]
+Creative Commons Attribution-NonCommercial 4.0 International Public License
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Mit dieser Lizenz wird dir gestattet, den Quellcode zu teilen, zu kopieren, zu bearbeiten und zu verändern, **unter der Bedingung**, dass:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. **Namensnennung**: Du musst angemessene Urheberrechtsinformationen angeben, auf die Lizenz verweisen und angeben, ob Änderungen vorgenommen wurden. Du darfst dies auf jede zumutbare Art und Weise tun, jedoch nicht in einer Weise, die den Eindruck erweckt, der Lizenzgeber unterstütze dich oder deine Nutzung des Materials.
+  
+2. **Nicht kommerziell**: Du darfst den Code nicht für kommerzielle Zwecke verwenden. Das bedeutet, du darfst ihn nicht im Rahmen von beruflichen Projekten oder zur Generierung von Einnahmen nutzen, ohne die ausdrückliche Genehmigung des Rechteinhabers.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Ausnahme: Für private oder nicht-kommerzielle Nutzung stehen alle Funktionen frei zur Verfügung.
+
+### Haftungsausschluss
+
+Der Code wird ohne jegliche Gewährleistung bereitgestellt. Der Autor übernimmt keine Verantwortung für Schäden oder Verluste, die aus der Verwendung des Codes resultieren könnten.
+
+### Kontakt für kommerzielle Nutzung
+
+Für Anfragen zur kommerziellen Nutzung oder zur Einholung einer Nutzungserlaubnis für berufliche Zwecke, bitte kontaktiere Ralf Krümmel.
+
+---
+
+Du kannst die vollständige Lizenz hier einsehen: https://creativecommons.org/licenses/by-nc/4.0/legalcode
