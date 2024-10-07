@@ -1,6 +1,6 @@
 import sqlite3  # sqlite3 importieren
 from plugin_manager import plugin_manager
-from csv_import import csv_import_plugin  # CSV Import Plugin importieren
+from csv_import import CSVImportPlugin  # CSV Import Plugin importieren
 
 DB_PATH = 'handwerker.db'
 

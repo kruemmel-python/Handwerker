@@ -24,10 +24,12 @@
     <Compile Include="csv_import.py" />
     <Compile Include="database.py" />
     <Compile Include="gui.py" />
-    <Compile Include="Handwerker.py" />
     <Compile Include="kalender.py" />
+    <Compile Include="kunden.py" />
+    <Compile Include="lagerverwaltung.py" />
     <Compile Include="login.py" />
     <Compile Include="main_app.py" />
+    <Compile Include="personal.py" />
     <Compile Include="plugin_manager.py" />
     <Compile Include="projektverwaltung.py" />
   </ItemGroup>

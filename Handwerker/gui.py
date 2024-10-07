@@ -1,14 +1,18 @@
-from tkinter import Tk, Button
+from tkinter import Tk, Menu
 from plugin_manager import plugin_manager
 from kalender import kalender_plugin
 from lagerverwaltung import lager_plugin
 from projektverwaltung import projekt_plugin
+from kunden import KundenPlugin  # Stelle sicher, dass KundenPlugin importiert wird
+from personal import MitarbeiterPlugin
 
 class GuiPlugin:
     def __init__(self):
         # Registriere das Plugin beim Plugin-Manager
         plugin_manager.register_plugin('GUI', self)
         self.main_app = None  # Hauptfenster wird hier zunächst nicht erstellt
+        self.kunden_plugin = KundenPlugin()  # Instanz von KundenPlugin erstellen
+        self.mitarbeiter_plugin = MitarbeiterPlugin()  # Instanz von MitarbeiterPlugin erstellen
 
     def initialize_gui(self):
         """Initialisiert die GUI-Komponenten und Plugins."""
@@ -18,9 +22,19 @@ class GuiPlugin:
         # Initialisiert den Kalender
         kalender_plugin.initialize_calendar(self.main_app)
 
-        # Erstellt Buttons für die Lager- und Projektverwaltung
-        Button(self.main_app, text="Lagerverwaltung", command=lager_plugin.open_lagerverwaltung).pack(pady=10)
-        Button(self.main_app, text="Projektverwaltung", command=projekt_plugin.open_projektverwaltung).pack(pady=10)
+        # Menüleiste erstellen
+        menuleiste = Menu(self.main_app)
+        self.main_app.config(menu=menuleiste)
+
+        # "Verwaltung"-Menü hinzufügen
+        verwaltung_menu = Menu(menuleiste, tearoff=0)
+        menuleiste.add_cascade(label="Verwaltung", menu=verwaltung_menu)
+
+        # Einträge für Verwaltung hinzufügen
+        verwaltung_menu.add_command(label="Lagerverwaltung", command=lager_plugin.open_lagerverwaltung)
+        verwaltung_menu.add_command(label="Projektverwaltung", command=projekt_plugin.open_projektverwaltung)
+        verwaltung_menu.add_command(label="Personalverwaltung", command=self.mitarbeiter_plugin.open_mitarbeiterverwaltung)
+        verwaltung_menu.add_command(label="Kundenverwaltung", command=self.kunden_plugin.open_kundenverwaltung)
 
     def run(self):
         """Startet die Haupt-Event-Schleife der GUI."""
