@@ -1,5 +1,6 @@
 
 ---
+Aktuelle im Projekt Benutzer und Passwort: Admin
 
 # Handwerker Projektverwaltung
 
