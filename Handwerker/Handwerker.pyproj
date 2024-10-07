@@ -32,6 +32,7 @@
     <Compile Include="personal.py" />
     <Compile Include="plugin_manager.py" />
     <Compile Include="projektverwaltung.py" />
+    <Compile Include="zeiterfassung.py" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

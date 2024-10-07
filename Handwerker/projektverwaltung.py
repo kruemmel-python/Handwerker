@@ -1,6 +1,6 @@
 import sqlite3
 from tkinter import Toplevel, Listbox, Button, simpledialog, END, messagebox, Entry, Label
-from tkinter.ttk import Combobox  # Für die Statusauswahl
+from tkinter.ttk import Combobox  # Für die Kunden- und Mitarbeiterauswahl
 from tkcalendar import DateEntry
 from plugin_manager import plugin_manager
 from lagerverwaltung import lager_plugin  # Um Artikel aus dem Lager auszuwählen
@@ -25,7 +25,7 @@ class ProjektPlugin:
             self.conn.close()
             projekt_window.destroy()
 
-        projekt_window.protocol("WM_DELETE_WINDOW", on_close)  # Schließt die Verbindung beim Fenster schließen
+        projekt_window.protocol("WM_DELETE_WINDOW", on_close)
 
         # GUI-Elemente für die Projektdetails
         listbox = Listbox(projekt_window, width=100)
@@ -35,13 +35,24 @@ class ProjektPlugin:
         entry_projektname = Entry(projekt_window)
         entry_projektname.grid(row=1, column=1)
 
+        # Kunde auswählen (mit Combobox)
         Label(projekt_window, text="Kunde").grid(row=2, column=0)
-        entry_kunde = Entry(projekt_window)
-        entry_kunde.grid(row=2, column=1)
+        combobox_kunde = Combobox(projekt_window)
+        combobox_kunde.grid(row=2, column=1)
 
+        # Mitarbeiter auswählen (mit Combobox)
         Label(projekt_window, text="Mitarbeiter").grid(row=3, column=0)
-        entry_mitarbeiter = Entry(projekt_window)
-        entry_mitarbeiter.grid(row=3, column=1)
+        combobox_mitarbeiter = Combobox(projekt_window)
+        combobox_mitarbeiter.grid(row=3, column=1)
+
+        # Kunden und Mitarbeiter aus der Datenbank laden
+        self.cursor.execute("SELECT vorname, nachname FROM kunden")
+        kunden_liste = [f"{row[0]} {row[1]}" for row in self.cursor.fetchall()]
+        combobox_kunde['values'] = kunden_liste
+
+        self.cursor.execute("SELECT vorname, nachname FROM mitarbeiter")
+        mitarbeiter_liste = [f"{row[0]} {row[1]}" for row in self.cursor.fetchall()]
+        combobox_mitarbeiter['values'] = mitarbeiter_liste
 
         Label(projekt_window, text="Startdatum").grid(row=4, column=0)
         entry_startdatum = DateEntry(projekt_window, date_pattern='yyyy-mm-dd')
@@ -73,7 +84,7 @@ class ProjektPlugin:
                     # Artikel aus dem Lagerbestand entnehmen
                     self.cursor.execute("UPDATE lager SET lagerbestand = lagerbestand - ? WHERE art_nr = ?", (menge, art_nr))
                     # Artikel dem Projekt zuordnen
-                    self.cursor.execute('''INSERT INTO projekt_artikel (projekt_name, art_nr, menge) 
+                    self.cursor.execute('''INSERT INTO projekt_artikel (projekt_name, art_nr, menge)
                                            VALUES (?, ?, ?)''', (entry_projektname.get(), art_nr, menge))
                     self.conn.commit()
                     listbox.insert(END, f"Artikel: {art_nr}, Menge: {menge}")
@@ -82,6 +93,138 @@ class ProjektPlugin:
 
         # Button, um Artikel hinzuzufügen
         Button(projekt_window, text="Artikel hinzufügen", command=artikel_hinzufuegen).grid(row=8, column=0, columnspan=2, pady=5)
+
+        # Artikel ändern
+        def artikel_aendern():
+            selected_indices = listbox.curselection()
+
+            if not selected_indices:
+                messagebox.showerror("Fehler", "Bitte wählen Sie ein Projekt aus der Liste aus.")
+                return
+
+            selected_item = listbox.get(selected_indices[0])
+            projekt_name = selected_item.split(',')[0].split(':')[1].strip()
+
+            self.cursor.execute("SELECT art_nr, menge FROM projekt_artikel WHERE projekt_name = ?", (projekt_name,))
+            artikel_rows = self.cursor.fetchall()
+
+            if not artikel_rows:
+                messagebox.showerror("Fehler", "Keine Artikel für dieses Projekt gefunden.")
+                return
+
+            for artikel in artikel_rows:
+                art_nr, alte_menge = artikel
+                neue_menge = simpledialog.askinteger("Menge bearbeiten", f"Menge für Artikel {art_nr} ändern:", initialvalue=alte_menge)
+                if neue_menge is not None:
+                    differenz = neue_menge - alte_menge
+                    if differenz > 0:
+                        # Erhöhte Menge -> Lagerbestand reduzieren
+                        self.cursor.execute("UPDATE lager SET lagerbestand = lagerbestand - ? WHERE art_nr = ?", (differenz, art_nr))
+                    elif differenz < 0:
+                        # Verringerte Menge -> Lagerbestand wieder auffüllen
+                        self.cursor.execute("UPDATE lager SET lagerbestand = lagerbestand + ? WHERE art_nr = ?", (-differenz, art_nr))
+
+                    self.cursor.execute("UPDATE projekt_artikel SET menge = ? WHERE projekt_name = ? AND art_nr = ?", (neue_menge, projekt_name, art_nr))
+
+            self.conn.commit()
+            messagebox.showinfo("Erfolg", "Artikelmengen aktualisiert!")
+            refresh_projekt_list()
+
+        # Button, um Artikel zu ändern
+        Button(projekt_window, text="Artikel ändern", command=artikel_aendern).grid(row=9, column=0, columnspan=2, pady=5)
+
+        # Neue Funktion für Aufmaß hinzufügen
+        def aufmass_hinzufuegen():
+            """Fügt eine Aufmaß-Eingabe hinzu und speichert sie in der Datenbank."""
+            try:
+                raumlaenge = simpledialog.askfloat("Raummaß", "Raumlänge (m):")
+                raumbreite = simpledialog.askfloat("Raummaß", "Raumbreite (m):")
+                raumhoehe = simpledialog.askfloat("Raummaß", "Raumhöhe (m):")
+
+                if None in (raumlaenge, raumbreite, raumhoehe):
+                    messagebox.showerror("Fehler", "Bitte alle Raummaße eingeben.")
+                    return
+
+                # Berechnungen für Bodenfläche und Wände
+                bodenflaeche = raumlaenge * raumbreite
+                wandflaeche1 = raumlaenge * raumhoehe
+                wandflaeche2 = raumbreite * raumhoehe
+                gesamt_wandflaeche = 2 * (wandflaeche1 + wandflaeche2)
+
+                # Gesamtergebnis anzeigen
+                aufmass_details = f"""
+                Raummaße:
+                Länge: {raumlaenge} m, Breite: {raumbreite} m, Höhe: {raumhoehe} m
+
+                Bodenfläche: {bodenflaeche} m²
+                Wandfläche (gesamt): {gesamt_wandflaeche} m²
+                """
+                messagebox.showinfo("Aufmaß-Ergebnis", aufmass_details)
+
+                # Aufmaß in der Datenbank speichern
+                kunde = combobox_kunde.get()
+                datum = entry_startdatum.get()
+                try:
+                    self.cursor.execute('''
+                        INSERT INTO aufmass (kunde, datum, raumlaenge, raumbreite, raumhoehe, bodenflaeche, wandflaeche)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ''', (kunde, datum, raumlaenge, raumbreite, raumhoehe, bodenflaeche, gesamt_wandflaeche))
+                    self.conn.commit()
+                    messagebox.showinfo("Erfolg", "Aufmaß erfolgreich gespeichert!")
+                except sqlite3.Error as e:
+                    messagebox.showerror("Datenbankfehler", f"Fehler beim Speichern des Aufmaßes: {e}")
+            except ValueError:
+                messagebox.showerror("Fehler", "Bitte gültige Zahlen für die Raummaße eingeben.")
+
+        # Button für Aufmaß hinzufügen
+        Button(projekt_window, text="Aufmaß hinzufügen", command=aufmass_hinzufuegen).grid(row=10, column=0, columnspan=2, pady=10)
+
+        # Aufmaß ändern
+        def aufmass_aendern():
+            selected_indices = listbox.curselection()
+
+            if not selected_indices:
+                messagebox.showerror("Fehler", "Bitte wählen Sie ein Projekt aus der Liste aus.")
+                return
+
+            selected_item = listbox.get(selected_indices[0])
+            projekt_name = selected_item.split(',')[0].split(':')[1].strip()
+
+            self.cursor.execute("SELECT id, raumlaenge, raumbreite, raumhoehe FROM aufmass WHERE kunde = ? AND datum = ?", (combobox_kunde.get(), entry_startdatum.get()))
+            aufmass_row = self.cursor.fetchone()
+
+            if not aufmass_row:
+                messagebox.showerror("Fehler", "Kein Aufmaß für dieses Projekt gefunden.")
+                return
+
+            aufmass_id, alte_laenge, alte_breite, alte_hoehe = aufmass_row
+
+            neue_laenge = simpledialog.askfloat("Raummaß", "Raumlänge (m):", initialvalue=alte_laenge)
+            neue_breite = simpledialog.askfloat("Raummaß", "Raumbreite (m):", initialvalue=alte_breite)
+            neue_hoehe = simpledialog.askfloat("Raummaß", "Raumhöhe (m):", initialvalue=alte_hoehe)
+
+            if None in (neue_laenge, neue_breite, neue_hoehe):
+                messagebox.showerror("Fehler", "Bitte alle Raummaße eingeben.")
+                return
+
+            # Berechnungen für Bodenfläche und Wände
+            bodenflaeche = neue_laenge * neue_breite
+            wandflaeche1 = neue_laenge * neue_hoehe
+            wandflaeche2 = neue_breite * neue_hoehe
+            gesamt_wandflaeche = 2 * (wandflaeche1 + wandflaeche2)
+
+            try:
+                self.cursor.execute('''
+                    UPDATE aufmass SET raumlaenge = ?, raumbreite = ?, raumhoehe = ?, bodenflaeche = ?, wandflaeche = ?
+                    WHERE id = ?
+                ''', (neue_laenge, neue_breite, neue_hoehe, bodenflaeche, gesamt_wandflaeche, aufmass_id))
+                self.conn.commit()
+                messagebox.showinfo("Erfolg", "Aufmaß erfolgreich aktualisiert!")
+            except sqlite3.Error as e:
+                messagebox.showerror("Datenbankfehler", f"Fehler beim Aktualisieren des Aufmaßes: {e}")
+
+        # Button für Aufmaß ändern
+        Button(projekt_window, text="Aufmaß ändern", command=aufmass_aendern).grid(row=11, column=0, columnspan=2, pady=10)
 
         def refresh_projekt_list():
             """Aktualisiert die Projektliste."""
@@ -94,8 +237,8 @@ class ProjektPlugin:
         def projekt_speichern():
             """Speichert ein neues Projekt oder aktualisiert ein bestehendes Projekt in der Datenbank und trägt es in den Kalender ein."""
             projektname = entry_projektname.get()
-            kunde = entry_kunde.get()
-            mitarbeiter = entry_mitarbeiter.get()
+            kunde = combobox_kunde.get()  # Ausgewählter Kunde
+            mitarbeiter = combobox_mitarbeiter.get()  # Ausgewählter Mitarbeiter
             startdatum = entry_startdatum.get()
             enddatum = entry_enddatum.get()
             beschreibung = entry_beschreibung.get()
@@ -169,10 +312,8 @@ class ProjektPlugin:
             if row:
                 entry_projektname.delete(0, END)
                 entry_projektname.insert(0, row[1])
-                entry_kunde.delete(0, END)
-                entry_kunde.insert(0, row[2])
-                entry_mitarbeiter.delete(0, END)
-                entry_mitarbeiter.insert(0, row[3])
+                combobox_kunde.set(row[2])  # Kunde setzen
+                combobox_mitarbeiter.set(row[3])  # Mitarbeiter setzen
                 entry_startdatum.set_date(row[4])
                 entry_enddatum.set_date(row[5])
                 entry_beschreibung.delete(0, END)
@@ -181,8 +322,8 @@ class ProjektPlugin:
                 def update_projekt():
                     """Aktualisiert das Projekt in der Datenbank und im Kalender."""
                     projektname = entry_projektname.get()
-                    kunde = entry_kunde.get()
-                    mitarbeiter = entry_mitarbeiter.get()
+                    kunde = combobox_kunde.get()  # Ausgewählter Kunde
+                    mitarbeiter = combobox_mitarbeiter.get()  # Ausgewählter Mitarbeiter
                     startdatum = entry_startdatum.get()
                     enddatum = entry_enddatum.get()
                     beschreibung = entry_beschreibung.get()
@@ -246,12 +387,32 @@ class ProjektPlugin:
                 for row in rows:
                     listbox.insert(END, f"Projekt: {row[0]}, Kunde: {row[1]}, Mitarbeiter: {row[2]}")
 
-        Button(projekt_window, text="Projekt speichern", command=projekt_speichern).grid(row=9, column=0)
-        Button(projekt_window, text="Projekt ändern", command=projekt_aendern).grid(row=9, column=1)
-        Button(projekt_window, text="Projekt löschen", command=projekt_loeschen).grid(row=10, column=0)
-        Button(projekt_window, text="Projekt suchen", command=projekt_suchen).grid(row=10, column=1)
+        Button(projekt_window, text="Projekt speichern", command=projekt_speichern).grid(row=12, column=0)
+        Button(projekt_window, text="Projekt ändern", command=projekt_aendern).grid(row=12, column=1)
+        Button(projekt_window, text="Projekt löschen", command=projekt_loeschen).grid(row=13, column=0)
+        Button(projekt_window, text="Projekt suchen", command=projekt_suchen).grid(row=13, column=1)
 
         listbox.bind('<Double-1>', projekt_details)
         refresh_projekt_list()
 
+# Datenbank für Aufmaß initialisieren
+def initialize_aufmass_database():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS aufmass (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            kunde TEXT,
+            datum TEXT,
+            raumlaenge REAL,
+            raumbreite REAL,
+            raumhoehe REAL,
+            bodenflaeche REAL,
+            wandflaeche REAL
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
 projekt_plugin = ProjektPlugin()
+initialize_aufmass_database()

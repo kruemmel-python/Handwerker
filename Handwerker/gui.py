@@ -5,6 +5,7 @@ from lagerverwaltung import lager_plugin
 from projektverwaltung import projekt_plugin
 from kunden import KundenPlugin  # Stelle sicher, dass KundenPlugin importiert wird
 from personal import MitarbeiterPlugin
+from zeiterfassung import ZeiterfassungPlugin
 
 class GuiPlugin:
     def __init__(self):
@@ -13,6 +14,7 @@ class GuiPlugin:
         self.main_app = None  # Hauptfenster wird hier zunächst nicht erstellt
         self.kunden_plugin = KundenPlugin()  # Instanz von KundenPlugin erstellen
         self.mitarbeiter_plugin = MitarbeiterPlugin()  # Instanz von MitarbeiterPlugin erstellen
+        self.zeiterfassung_plugin = ZeiterfassungPlugin()  # Instanz des ZeiterfassungPlugins erstellen
 
     def initialize_gui(self):
         """Initialisiert die GUI-Komponenten und Plugins."""
@@ -35,6 +37,9 @@ class GuiPlugin:
         verwaltung_menu.add_command(label="Projektverwaltung", command=projekt_plugin.open_projektverwaltung)
         verwaltung_menu.add_command(label="Personalverwaltung", command=self.mitarbeiter_plugin.open_mitarbeiterverwaltung)
         verwaltung_menu.add_command(label="Kundenverwaltung", command=self.kunden_plugin.open_kundenverwaltung)
+        
+        # Zeiterfassung zum Menü hinzufügen
+        verwaltung_menu.add_command(label="Zeiterfassung", command=lambda: self.zeiterfassung_plugin.open_zeiterfassung(self.main_app))
 
     def run(self):
         """Startet die Haupt-Event-Schleife der GUI."""

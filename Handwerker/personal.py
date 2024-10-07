@@ -336,5 +336,8 @@ class MitarbeiterPlugin:
         except sqlite3.Error as e:
             messagebox.showerror("Datenbankfehler", f"Fehler beim Anzeigen der Mitarbeiterliste: {e}")
 
-# Plugin-Instanz erstellen
-mitarbeiter_plugin = MitarbeiterPlugin()
+
+# Plugin-Instanz erstellen und Menü hinzufügen, falls in eine bestehende GUI integriert
+if __name__ != "__main__":
+    def start_plugin(root):
+        plugin = MitarbeiterPlugin()
